@@ -18,12 +18,37 @@ public class ProductController {
     @Autowired
     ProductRepository repository;
 
-    @PostMapping
-    public ResponseEntity postProduct(@RequestBody @Valid ProductRequestDTO body){
-        Product newProduct = new Product(body);
+    @PostMapping("/add")
+    public ResponseEntity<?> postProduct(@RequestBody @Valid ProductRequestDTO body) {
+        try {
+            System.out.println("O produto " + body.name()+" foi cadastrado com sucesso!");
+            
+            // Validação explícita (redundante, mas útil para debug)
+            if (body.name() == null || body.name().isBlank()) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("error", "VALIDATION_ERROR", "message", "O campo 'name' é obrigatório")
+                );
+            }
+            
+            if (body.price() == null || body.price() < 0) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("error", "VALIDATION_ERROR", "message", "O campo 'price' deve ser positivo")
+                );
+            }
 
-        this.repository.save(newProduct);
-        return ResponseEntity.ok().build();
+            Product newProduct = new Product(body);
+            repository.save(newProduct);
+
+            return ResponseEntity.ok().body(
+                Map.of("success", true, "message", "Produto cadastrado com sucesso")
+            );
+            
+        } catch (Exception e) {
+            System.err.println("Erro no cadastro: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(
+                Map.of("error", "SERVER_ERROR", "message", "Erro ao processar requisição")
+            );
+        }
     }
 
     @GetMapping
